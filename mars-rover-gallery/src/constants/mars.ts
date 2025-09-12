@@ -8,3 +8,5 @@ export const CAMERAS_BY_ROVER = {
 
 export type RoverKey = typeof ROVERS[number]
 export type CameraCode = typeof CAMERAS_BY_ROVER[keyof typeof CAMERAS_BY_ROVER][number]
+
+

@@ -1,8 +1,10 @@
-"use client";
+"use client"
 
-import { useEffect, useState } from "react";
-import type { Photo } from "@/types/mars";
-import {CAMERAS_BY_ROVER, ROVERS, type CameraCode, type RoverKey,} from "@/constants/mars";
+import { useEffect, useState } from "react"
+import type { Photo } from "@/types/mars"
+import { type CameraCode, type RoverKey } from "@/constants/mars"
+import Filters from "./Filters";
+import PhotoCard from "./PhotoCard"
 
 export default function Gallery() {
 
@@ -16,23 +18,22 @@ export default function Gallery() {
   const [minDate, setMinDate] = useState<string>("")
   const [maxDate, setMaxDate] = useState<string>("")
 
-  const [page, setPage] = useState<number>(1);
+  const [page, setPage] = useState<number>(1)
   const [hasNext, setHasNext] = useState<boolean>(false)
-
-  const cameraOptions = CAMERAS_BY_ROVER[rover] as readonly CameraCode[]
 
 
   useEffect(() => {
     setCamera("")
   }, [rover])
 
-
   useEffect(() => {
     setPage(1);
   }, [rover, camera, earthDate])
 
+
   useEffect(() => {
     let cancelled = false;
+
     (async () => {
       try {
         const res = await fetch(`/api/mars/manifest?rover=${rover}`)
@@ -41,10 +42,10 @@ export default function Gallery() {
         if (!cancelled) {
           setMinDate(m.landing_date)
           setMaxDate(m.max_date)
-          setEarthDate(m.max_date)
+          setEarthDate((prev) => prev || m.max_date)
         }
       } catch (e) {
-        console.error(e);
+        console.error(e)
         if (!cancelled) {
           setMinDate("")
           setMaxDate("")
@@ -52,17 +53,23 @@ export default function Gallery() {
         }
       }
     })()
-    return () => { cancelled = true; }
+
+    return () => {
+      cancelled = true
+    };
   }, [rover])
 
+
   useEffect(() => {
+    const ctrl = new AbortController();
+    setLoading(true);
+
     (async () => {
-      setLoading(true);
       try {
         if (!earthDate) {
-          setPhotos([])
+          setPhotos([]);
           setHasNext(false)
-          return
+          return;
         }
 
         const qs = new URLSearchParams({
@@ -72,117 +79,70 @@ export default function Gallery() {
           ...(camera ? { camera: camera.toLowerCase() } : {}),
         })
 
-        const res = await fetch(`/api/mars?${qs.toString()}`);
-        if (!res.ok) throw new Error(`Falha: ${res.status}`);
+        const res = await fetch(`/api/mars?${qs.toString()}`, {
+          signal: ctrl.signal,
+        })
+        if (!res.ok) throw new Error(`Falha: ${res.status}`)
 
-        const data = await res.json()
+        const data = await res.json();
         const current = (data.photos ?? []) as Photo[]
-        setPhotos(current)
+        setPhotos(current);
 
-        let nextAvailable = false
-        if (current.length > 0) {
-          const nextQs = new URLSearchParams({
-            rover,
-            earth_date: earthDate,
-            page: String(page + 1),
-            ...(camera ? { camera: camera.toLowerCase() } : {}),
-          })
-          const nextRes = await fetch(`/api/mars?${nextQs.toString()}`)
-          if (nextRes.ok) {
-            const nextData = await nextRes.json();
-            nextAvailable = (nextData.photos?.length ?? 0) > 0
-          }
+
+        setHasNext(current.length === 25)
+      } catch (err: any) {
+        if (err?.name !== "AbortError") {
+          console.error("Erro ao buscar fotos", err)
+          setPhotos([])
+          setHasNext(false)
         }
-        setHasNext(nextAvailable);
-      } catch (err) {
-        console.error("Erro ao buscar fotos", err)
-        setPhotos([])
-        setHasNext(false)
       } finally {
         setLoading(false)
       }
     })();
+
+    return () => ctrl.abort();
   }, [rover, camera, earthDate, page])
 
   const canPrev = page > 1
   const canNext = hasNext
 
-  const goPrev = () => { if (canPrev && !loading) setPage((p) => Math.max(1, p - 1)); }
-  const goNext = () => { if (canNext && !loading) setPage((p) => p + 1); }
+  const goPrev = () => {
+    if (canPrev && !loading) setPage((p) => Math.max(1, p - 1))
+  }
+  const goNext = () => {
+    if (canNext && !loading) setPage((p) => p + 1)
+  }
 
   return (
     <>
-      <div className="mb-6 rounded-xl border border-white/15 bg-transparent p-4">
-        <div className="flex flex-wrap items-end gap-4 justify-center sm:justify-between">
-          {/* Rover */}
-          <div className="flex flex-col">
-            <label className="text-xs font-medium text-gray-600 mb-1">Rover</label>
-            <select
-              value={rover}
-              onChange={(e) => setRover(e.target.value as RoverKey)}
-              className="h-10 w-44 border rounded-lg px-3 shadow-sm"
-            >
-              {ROVERS.map((r) => (
-                <option key={r} value={r}>{r}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Data */}
-          <div className="flex flex-col">
-            <label className="text-xs font-medium text-gray-600 mb-1">Data</label>
-            <input
-              type="date"
-              value={earthDate}
-              min={minDate || undefined}
-              max={maxDate || undefined}
-              onChange={(e) => setEarthDate(e.target.value)}
-              className="h-10 w-44 border rounded-lg px-3 shadow-sm"
-            />
-          </div>
-
-          {/* Câmera */}
-          <div className="flex flex-col">
-            <label className="text-xs font-medium text-gray-600 mb-1">Câmera</label>
-            <select
-              value={camera}
-              onChange={(e) => setCamera(e.target.value as "" | CameraCode)}
-              className="h-10 w-44 border rounded-lg px-3 shadow-sm"
-            >
-              <option value="">Todas</option>
-              {cameraOptions.map((c) => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-      </div>
+      <Filters
+        rover={rover}
+        setRover={setRover}
+        camera={camera}
+        setCamera={setCamera}
+        earthDate={earthDate}
+        setEarthDate={setEarthDate}
+        minDate={minDate}
+        maxDate={maxDate}
+      />
 
       {!earthDate ? (
-        <p className="text-center text-sm text-gray-600">Escolha uma data dentro do intervalo acima.</p>
+        <p className="text-center text-sm text-gray-600">
+          Escolha uma data dentro do intervalo acima.
+        </p>
       ) : loading && photos.length === 0 ? (
         <p className="text-center text-sm">Carregando fotos...</p>
       ) : photos.length === 0 ? (
-        <p className="text-center text-sm">Nenhuma foto encontrada para essa combinação.</p>
+        <p className="text-center text-sm">
+          Nenhuma foto encontrada para essa combinação.
+        </p>
       ) : (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            {photos.map((photo) => {
-              const src = photo.img_src.replace(/^http:\/\//, "https://");
-              return (
-                <div key={photo.id} className="border rounded-lg p-2 shadow-sm">
-                  <img
-                    src={src}
-                    alt={`Foto de Marte ${photo.id}`}
-                    className="w-full h-48 object-cover rounded"
-                    loading="lazy"
-                  />
-                  <p><strong>Data:</strong> {photo.earth_date}</p>
-                  <p><strong>Rover:</strong> {photo.rover.name}</p>
-                  <p><strong>Câmera:</strong> {photo.camera.full_name}</p>
-                </div>
-              );
-            })}
+            {photos.map((photo) => (
+              <PhotoCard key={photo.id} photo={photo} />
+            ))}
           </div>
 
           <div className="mt-6 flex items-center justify-center gap-3">
@@ -190,6 +150,7 @@ export default function Gallery() {
               onClick={goPrev}
               disabled={!canPrev || loading}
               className="border rounded-lg px-3 py-2 disabled:opacity-50"
+              aria-label="Página anterior"
             >
               ← Anterior
             </button>
@@ -198,15 +159,16 @@ export default function Gallery() {
               onClick={goNext}
               disabled={!canNext || loading}
               className="border rounded-lg px-3 py-2 disabled:opacity-50"
+              aria-label="Próxima página"
             >
               Próxima →
             </button>
-            <span className="text-xs opacity-70">
+            <span className="text-xs opacity-70" aria-live="polite">
               {loading ? "Carregando..." : `Mostrando ${photos.length} fotos`}
             </span>
           </div>
         </>
       )}
     </>
-  );
+  )
 }
