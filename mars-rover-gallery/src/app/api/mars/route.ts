@@ -32,7 +32,14 @@ export async function GET(request:Request) {
         }
 
         const data = await res.json()
-        return NextResponse.json(data);
+        if(Array.isArray(data?.photos)){
+            data.photos = data.photos.map((p: any) => ({
+                ...p,
+                img_src: typeof p.img_src === "string" ? p.img_src.replace(/^http:\/\//, "https://") : p.img_src
+            }))
+        }
+
+        return NextResponse.json(data, {status: res.status});
 
     }catch(err){
         console.error("Erro na rota /api/mars:", err);

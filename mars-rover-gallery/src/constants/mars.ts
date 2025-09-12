@@ -1,7 +1,7 @@
 export const ROVERS = ["curiosity", "opportunity", "spirit"] as const
 
 export const CAMERAS_BY_ROVER = {
-  curiosity: ["FHAZ","RHAZ","MAST","CHEMCAM","MAHLI","MARDI","NAVCAM"],
+  curiosity: ["FHAZ","RHAZ","MAST","CHEMCAM","MAHLI","MARDI","NAVCAM", "CHEMCAM_RMI"],
   opportunity: ["FHAZ","RHAZ","NAVCAM","PANCAM","MINITES"],
   spirit: ["FHAZ","RHAZ","NAVCAM","PANCAM","MINITES"],
 } as const
