@@ -24,23 +24,23 @@ O objetivo é consumir a [NASA Mars Rover Photos API](https://api.nasa.gov/#mars
 ## ✅ Como executar o projeto 
 
 ### 1. Clonar o repositório
-```
+
 git clone https://github.com/TalitaFraga/desafio_UniverseEx
 cd desafio_UniverseEx
 npm install
-```
+
 
 ### 2. Criar API KEY
-```
+
 Na raiz do projeto crie o arquivo .env.local e adicione sua chave da NASA:
 NASA_API_KEY=SUA_CHAVE_AQUI
 Gere sua chave gratuita no site oficial: https://api.nasa.gov/#mars-rover-photos
-```
+
 
 ### 3. Executando o projeto
-```
+
 Acesse a pasta mars-rover-gallery: cd mars-rover-gallery
 Execute o projeto: npm run dev
 Aplicação: http://localhost:3000/
 Exemplo de chamada API interna: http://localhost:3000/api/mars?rover=curiosity&earth_date=2020-03-21&page=1
-```
+
